@@ -511,7 +511,7 @@ def is_type_and_class_valid(dns_type, dns_class):
 #
 #    0         7            15           23            31    OCTET
 #    ---------------------------------------------------
-#    |    Identiciation     |         Flags            |        0
+#    |    Identification    |         Flags            |        0
 #    ---------------------------------------------------
 #    |    No. of Questions  |    No. of Answers        |        4
 #    ---------------------------------------------------
