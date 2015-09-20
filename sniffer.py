@@ -30,13 +30,16 @@
 
 ###
 # All required imports
+from os import path, popen
+from socket import AF_INET, SOCK_DGRAM, AF_INET6, AF_PACKET, SOCK_RAW
+from socket import socket, inet_ntoa, inet_ntop, ntohs
+from struct import unpack, pack
 from sys import argv, exit
 from time import gmtime, strftime, time
-from struct import unpack, pack
+
 from fcntl import ioctl
-from os import path, popen
-from socket import socket, inet_ntoa, inet_ntop, AF_INET, SOCK_DGRAM, AF_INET6, AF_PACKET, SOCK_RAW, ntohs
 from redis import Redis
+
 
 ###
 # Packet type
@@ -61,40 +64,40 @@ ETH_TYPE_POS = 2
 ###
 # Specific to ARP Packets
 ARP_UNPACK_PATTERN = '2s2s1s1s2s6s4s6s4s'
-ARP_SRC_ADDR_POS = 6						# Where the source address is stored
-ARP_DEST_ADDR_POS = 8						# Where the destination address is stored
+ARP_SRC_ADDR_POS = 6			# Where the source address is stored
+ARP_DEST_ADDR_POS = 8			# Where the destination address is stored
 
 ###
 # Specific to IPv4 Packets
 IPv4_UNPACK_PATTERN = '!BBHHHBBH4s4s'
-IPv4_PROTOCOL_POS = 6					# Where the protocol related information is stored
-IPv4_SRC_ADDR_POS = 8					# Where the source address is stored
-IPv4_DEST_ADDR_POS = 9					# Where the destination address is stored
-IPv4_ICMP_PROTO = 1						# ICMP Protocol
-IPv4_TCP_PROTO = 6						# TCP Protocol
-IPv4_UDP_PROTO = 17						# UDP Protocol
+IPv4_PROTOCOL_POS = 6			# Where the protocol info is stored
+IPv4_SRC_ADDR_POS = 8			# Where the source address is stored
+IPv4_DEST_ADDR_POS = 9			# Where the dest address is stored
+IPv4_ICMP_PROTO = 1			# ICMP Protocol
+IPv4_TCP_PROTO = 6			# TCP Protocol
+IPv4_UDP_PROTO = 17			# UDP Protocol
 
 ###
 # Specific to IPv6 Packets
 IPv6_UNPACK_PATTERN = '!4sHBB16s16s'
-IPv6_PROTOCOL_POS = 3					# Where the protocol related information is stored
-IPv6_SRC_ADDR_POS = 4					# Where the source address is stored
-IPv6_DEST_ADDR_POS = 5					# Where the destination address is stored
-IPv6_ICMP_PROTO = 58					# ICMP Protocol
-IPv6_TCP_PROTO = 6						# TCP Protocol
-IPv6_UDP_PROTO = 17						# UDP Protocol
+IPv6_PROTOCOL_POS = 3			# Where the protocol info is stored
+IPv6_SRC_ADDR_POS = 4			# Where the source address is stored
+IPv6_DEST_ADDR_POS = 5			# Where the dest address is stored
+IPv6_ICMP_PROTO = 58			# ICMP Protocol
+IPv6_TCP_PROTO = 6			# TCP Protocol
+IPv6_UDP_PROTO = 17			# UDP Protocol
 
 ###
 # Specific to UDP Packets
 UDP_UNPACK_PATTERN = '!HHHH'
-UDP_SRC_PORT_POS = 0					# Where the source port is stored
-UDP_DEST_PORT_POS = 1					# Where the destination port is stored
+UDP_SRC_PORT_POS = 0			# Where the source port is stored
+UDP_DEST_PORT_POS = 1			# Where the destination port is stored
 
 ###
 # Specific to TCP Packets
 TCP_UNPACK_PATTERN = '!HHLLBBHHH'
-TCP_SRC_PORT_POS = 0					# Where the source port is stored
-TCP_DEST_PORT_POS = 1					# Where the destination port is stored
+TCP_SRC_PORT_POS = 0			# Where the source port is stored
+TCP_DEST_PORT_POS = 1			# Where the destination port is stored
 
 ###
 # Ports of interest
@@ -107,7 +110,7 @@ DNS_HDR_LEN = 12
 DNS_ANS_UNPACK_PATTERN = '!HHHIH'
 DNS_ANS_HDR_LEN = 12
 DNS_IPv4_UNPACK_PATTERN = '!4s'
-DNS_IPv4_SIZE = 4					# 4 Bytes to store an IP
+DNS_IPv4_SIZE = 4			# 4 Bytes to store an IP
 DNS_FLAGS_POS = 1
 DNS_NUM_ANS_POS = 3
 DNS_ANS_TYPE_POS = 1
@@ -119,11 +122,11 @@ DNS_QUERY_CLASS_POS = 1
 # Values of interest in DNS packet
 DNS_RESP = "0x8180"		# Standard Query response, No Error
 DNS_A_TYPE = "1"		# IP Address
-DNS_CNAME_TYPE = "5"	# Canonical name
+DNS_CNAME_TYPE = "5"		# Canonical name
 DNS_CLASS = "1"			# Internet Address
 DNS_NAME_END = 0		# Default end value for names
 DNS_PTR_END = 192		# Default end value for PTR types used in names
-DNS_MAX_NAME_LEN = 63	# Max length of Names in DNS packets
+DNS_MAX_NAME_LEN = 63		# Max length of Names in DNS packets
 DNS_PTR_SIZE = 2		# 2 Bytes
 
 ###
@@ -145,7 +148,7 @@ DEFAULT_NMCLI_DNS_POS = "2"
 DEFAULT_NMCLI_DHCP_LOOKUP = "dhcp_ser"
 DEFAULT_NMCLI_DHCP_POS = "4"
 DEFAULT_REDIS_SERVER = "localhost"
-DEFAULT_EXPIRE_TIME = 86400							# Expires after 24 hours to save space
+DEFAULT_EXPIRE_TIME = 86400		# Expires after 24 hours to save space
 
 ###
 # global values
@@ -218,8 +221,11 @@ def get_default_route(net_iface_dev):
 	with open(DEFAULT_PROC_ROUTE_PATH) as fh:
 		for line in fh:
 			fields = line.strip().split()
-			if fields[0] != net_iface_dev: continue
-			if fields[1] != '00000000' or not int(fields[3], 16) & 2: continue
+			if fields[0] != net_iface_dev:
+				continue
+			if (fields[1] != '00000000') or \
+					not int(fields[3], 16) & 2:
+				continue
 			ip = inet_ntoa(pack("<L", int(fields[2], 16)))
 			cache_set([ip], "Default-Route")
 
@@ -228,7 +234,10 @@ def get_default_route(net_iface_dev):
 # Retrieve the DNS servers used
 #
 def get_DNS_servers(net_iface_dev):
-	_blah = popen(DEFAULT_NMCLI_COMMAND + net_iface_dev + " | grep " + DEFAULT_NMCLI_DNS_LOOKUP + " | awk '{print $" + DEFAULT_NMCLI_DNS_POS + "}'").readlines()
+	_blah = popen(DEFAULT_NMCLI_COMMAND + net_iface_dev + \
+			" | grep " + DEFAULT_NMCLI_DNS_LOOKUP + \
+			" | awk '{print $" + DEFAULT_NMCLI_DNS_POS + \
+			"}'").readlines()
 	if not _blah: return []
 
 	namify=["Primary-DNS", "Secondary-DNS", "Tertiary-DNS"]
@@ -241,7 +250,10 @@ def get_DNS_servers(net_iface_dev):
 # Retrieve the DHCP servers used
 #
 def get_DHCP_server(net_iface_dev):
-	_blah = popen(DEFAULT_NMCLI_COMMAND + net_iface_dev + " | grep " + DEFAULT_NMCLI_DHCP_LOOKUP + " | awk '{print $" + DEFAULT_NMCLI_DHCP_POS + "}'").readlines()
+	_blah = popen(DEFAULT_NMCLI_COMMAND + net_iface_dev + \
+			" | grep " + DEFAULT_NMCLI_DHCP_LOOKUP + \
+			" | awk '{print $" + DEFAULT_NMCLI_DHCP_POS + \
+			"}'").readlines()
 	if not _blah: return []
 
 	namify=["Primary-DHCP", "Secondary-DHCP", "Tertiary-DHCP"]
@@ -253,7 +265,8 @@ def get_DHCP_server(net_iface_dev):
 # Retrieve the local IP
 #
 def local_ip():
-	ip = ([(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket(AF_INET, SOCK_DGRAM)]][0][1])
+	ip = ([(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) \
+			for s in [socket(AF_INET, SOCK_DGRAM)]][0][1])
 	cache_set([ip], "Local-IP")
 
 
@@ -271,14 +284,17 @@ def local_MAC(sys_path):
 # Format the MAC address into human readable form
 #
 def fmt_MAC(pkt):
-	return "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x" % (ord(pkt[0]) , ord(pkt[1]) , ord(pkt[2]), ord(pkt[3]),ord(pkt[4]) , ord(pkt[5]))
+	return "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x" % \
+		(ord(pkt[0]) , ord(pkt[1]) , ord(pkt[2]), \
+		ord(pkt[3]), ord(pkt[4]) , ord(pkt[5]))
 
 
 ###
 # Format the IP address into human readable form
 #
 def fmt_IP(pkt):
-	return "%d.%d.%d.%d" % (ord(pkt[0]) , ord(pkt[1]) , ord(pkt[2]), ord(pkt[3]))
+	return "%d.%d.%d.%d" % \
+		(ord(pkt[0]) , ord(pkt[1]) , ord(pkt[2]), ord(pkt[3]))
 
 
 ###
@@ -312,7 +328,9 @@ def is_acceptable_dest(dest_addr, dest_port):
 ###
 # Prettify the print in a tablular column
 #
-def pretty_print(etype, etype_transport, src_mac, src_addr, src_port, dest_mac, dest_addr, dest_port):
+def pretty_print(etype, etype_transport,
+		src_mac, src_addr, src_port,
+		dest_mac, dest_addr, dest_port):
 	cur_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
 
 	if etype_transport != "": etype += "/" + etype_transport
@@ -331,12 +349,14 @@ def pretty_print(etype, etype_transport, src_mac, src_addr, src_port, dest_mac, 
 
 	# source data
 	data += '\t| ' + "%.26s" % ip_to_name(src_addr).rjust(IP_LEN)
-	if g_print_mac: data += '(' + MAC_to_name(src_mac.upper()).rjust(MAC_LEN) + ')'
+	if g_print_mac:
+		data += '(' + MAC_to_name(src_mac.upper()).rjust(MAC_LEN) + ')'
 	data += ' | ' + "%.8s" % src_port.ljust(PORT_LEN)
 
 	# destination data
 	data += '\t| ' + "%.26s" % ip_to_name(dest_addr).rjust(IP_LEN)
-	if g_print_mac: data += '(' + MAC_to_name(dest_mac.upper()).rjust(MAC_LEN) + ')'
+	if g_print_mac:
+		data += '(' + MAC_to_name(dest_mac.upper()).rjust(MAC_LEN) + ')'
 	data += ' | ' + dest_port
 
 	print data
@@ -345,7 +365,9 @@ def pretty_print(etype, etype_transport, src_mac, src_addr, src_port, dest_mac, 
 ###
 # Print in CSV format
 #
-def print_csv(etype, etype_transport, src_mac, src_addr, src_port, dest_mac, dest_addr, dest_port):
+def print_csv(etype, etype_transport,
+		src_mac, src_addr, src_port,
+		dest_mac, dest_addr, dest_port):
 	cur_time = time()
 
 	# generic data
@@ -375,7 +397,9 @@ def print_csv(etype, etype_transport, src_mac, src_addr, src_port, dest_mac, des
 ###
 # Print the final data
 #
-def g_print_data(etype, etype_transport, src_mac, src_addr, src_port, dest_mac, dest_addr, dest_port):
+def g_print_data(etype, etype_transport,
+		src_mac, src_addr, src_port,
+		dest_mac, dest_addr, dest_port):
 	if not is_acceptable_dest(dest_addr, dest_port):
 		return
 
@@ -386,9 +410,13 @@ def g_print_data(etype, etype_transport, src_mac, src_addr, src_port, dest_mac, 
 	if g_print_human_readable and src_port == "0": src_port = "n/a"
 
 	if g_print_in_csv:
-		print_csv(etype, etype_transport, src_mac, src_addr, src_port, dest_mac, dest_addr, dest_port)
+		print_csv(etype, etype_transport, 		\
+				src_mac, src_addr, src_port, 	\
+				dest_mac, dest_addr, dest_port)
 	else:
-		pretty_print(etype, etype_transport, src_mac, src_addr, src_port, dest_mac, dest_addr, dest_port)
+		pretty_print(etype, etype_transport, 		\
+				src_mac, src_addr, src_port, 	\
+				dest_mac, dest_addr, dest_port)
 
 
 
@@ -419,7 +447,8 @@ def retrieve_tcp_packet_info(packet, isIPv6 = False):
 	if isIPv6:
 		start_pos = ETH_HDR_LEN + IPv6_HDR_LEN
 
-	tcp_header = unpack(TCP_UNPACK_PATTERN, packet[start_pos:start_pos + TCP_HDR_LEN])
+	tcp_header = unpack(TCP_UNPACK_PATTERN, \
+				packet[start_pos:start_pos + TCP_HDR_LEN])
 	src_port = str(tcp_header[TCP_SRC_PORT_POS])
 	dest_port = str(tcp_header[TCP_DEST_PORT_POS])
 
@@ -447,7 +476,8 @@ def retrieve_udp_packet_info(packet, isIPv6=False):
 	if isIPv6:
 		start_pos = ETH_HDR_LEN + IPv6_HDR_LEN
 
-	udp_header = unpack(UDP_UNPACK_PATTERN, packet[start_pos:start_pos + UDP_HDR_LEN])
+	udp_header = unpack(UDP_UNPACK_PATTERN, \
+				packet[start_pos:start_pos + UDP_HDR_LEN])
 	src_port = str(udp_header[UDP_SRC_PORT_POS])
 	dest_port = str(udp_header[UDP_DEST_PORT_POS])
 
@@ -501,7 +531,8 @@ def decode_name_from_dns_packet(start_pos, packet, isPtr=False):
 # Is the type a 'Host Address' & class the 'Internet Address'
 #
 def is_type_and_class_valid(dns_type, dns_class):
-	return ((str(int(dns_type)) == DNS_A_TYPE) and (str(int(dns_class)) == DNS_CLASS))
+	return ((str(int(dns_type)) == DNS_A_TYPE) and \
+		(str(int(dns_class)) == DNS_CLASS))
 
 
 ###
@@ -550,15 +581,19 @@ def parse_and_cache_dns_response(packet, isIPv6=False):
 	# '4' bytes for "DNS Type" & "DNS Class" data
 	answer_pos = next_pos+4
 	query_details = unpack('!HH', packet[next_pos:answer_pos])
-	if is_type_and_class_valid(query_details[DNS_QUERY_TYPE_POS], query_details[DNS_QUERY_CLASS_POS]):
+	if is_type_and_class_valid(query_details[DNS_QUERY_TYPE_POS], \
+					query_details[DNS_QUERY_CLASS_POS]):
 		ip_array = []
 		while number_of_answers:
-			answer_data = unpack(DNS_ANS_UNPACK_PATTERN, packet[answer_pos:answer_pos+DNS_ANS_HDR_LEN])
+			answer_data = unpack(DNS_ANS_UNPACK_PATTERN, \
+						packet[answer_pos:answer_pos+DNS_ANS_HDR_LEN])
 			answer_pos += DNS_ANS_HDR_LEN
 
 			# Is this a valid class
 			if (str(int(answer_data[DNS_ANS_CLASS_POS])) != DNS_CLASS):
-				print "Some error while processing for", url, " class data:", str(int(answer_data[DNS_ANS_CLAS_POS]))
+				print "Some error while processing for", url, \
+					" class data:", \
+					str(int(answer_data[DNS_ANS_CLAS_POS]))
 				exit(1)
 
 			# Is this a 'CNAME' record
@@ -568,21 +603,26 @@ def parse_and_cache_dns_response(packet, isIPv6=False):
 				#ttl = str(hex(answer_data[3]))		# TTL??!
 				#d_len = str(int(answer_data[4]))	# Data Length
 
-				(length,) = unpack('!B', packet[answer_pos:answer_pos+1])
+				(length,) = unpack('!B', \
+							packet[answer_pos:answer_pos+1])
 				if length > DNS_MAX_NAME_LEN: # PTR type
 					answer_pos += DNS_PTR_SIZE
 				else: # name decoded
-					(length,) = unpack('!B', packet[answer_pos:answer_pos+1])
+					(length,) =
+						unpack('!B', \
+						packet[answer_pos:answer_pos+1])
 					alias_name, answer_pos = decode_name_from_dns_packet(answer_pos, packet, True)
 
 			# Is this a 'A' record
-			if (str(int(answer_data[DNS_ANS_TYPE_POS])) == DNS_A_TYPE):
+			if (str(int(answer_data[DNS_ANS_TYPE_POS])) == \
+					DNS_A_TYPE):
 				# Unused
 				#ptr = str(hex(answer_data[0]))		# Pointer to Doman Name Name
 				#ttl = str(hex(answer_data[3]))		# TTL??!
 				#d_len = str(int(answer_data[4]))	# Data Length
 
-				(ip_str,) = unpack(DNS_IPv4_UNPACK_PATTERN ,packet[answer_pos:answer_pos+DNS_IPv4_SIZE])
+				(ip_str,) = unpack(DNS_IPv4_UNPACK_PATTERN, \
+							packet[answer_pos:answer_pos+DNS_IPv4_SIZE])
 				ip_array.append(fmt_IP(ip_str))
 				answer_pos += DNS_IPv4_SIZE
 
@@ -619,7 +659,8 @@ def parse_and_cache_dns_response(packet, isIPv6=False):
 # Courtesy: http://www.yaldex.com/tcp_ip/FILES/04fig03.gif
 #
 def retrieve_ipv4_packet_info(packet):
-	ip_header = unpack(IPv4_UNPACK_PATTERN, packet[ETH_HDR_LEN:ETH_HDR_LEN + IPv4_HDR_LEN])
+	ip_header = unpack(IPv4_UNPACK_PATTERN, \
+				packet[ETH_HDR_LEN:ETH_HDR_LEN + IPv4_HDR_LEN])
 
 	src_addr = str(inet_ntoa(ip_header[IPv4_SRC_ADDR_POS]))
 	dest_addr = str(inet_ntoa(ip_header[IPv4_DEST_ADDR_POS]))
@@ -675,7 +716,8 @@ def retrieve_ipv4_packet_info(packet):
 # Courtesy: http://www.tutorialspoint.com/ipv6/images/IPv6_header.jpg
 #
 def retrieve_ipv6_packet_info(packet):
-	ip_header = unpack(IPv6_UNPACK_PATTERN, packet[ETH_HDR_LEN:ETH_HDR_LEN + IPv6_HDR_LEN])
+	ip_header = unpack(IPv6_UNPACK_PATTERN, \
+				packet[ETH_HDR_LEN:ETH_HDR_LEN + IPv6_HDR_LEN])
 
 	src_addr = str(inet_ntop(AF_INET6, ip_header[IPv6_SRC_ADDR_POS]))
 	dest_addr = str(inet_ntop(AF_INET6, ip_header[IPv6_DEST_ADDR_POS]))
@@ -720,7 +762,8 @@ def retrieve_ipv6_packet_info(packet):
 # Courtesy: https://reaper81.files.wordpress.com/2010/07/arp-header1.png
 #
 def retrieve_arp_packet_info(packet):
-	arp_header = unpack(ARP_UNPACK_PATTERN, packet[ETH_HDR_LEN:ETH_HDR_LEN+ARP_HDR_LEN])
+	arp_header = unpack(ARP_UNPACK_PATTERN, \
+				packet[ETH_HDR_LEN:ETH_HDR_LEN+ARP_HDR_LEN])
 
 	src_addr = str(inet_ntoa(arp_header[ARP_SRC_ADDR_POS]))
 	dest_addr = str(inet_ntoa(arp_header[ARP_DEST_ADDR_POS]))
@@ -772,16 +815,23 @@ def dump_packet_info(packet):
 
 	etype_transport = ""
 	if etype == ARP_ID:	# ARP Packet
-		src_addr, src_port, dest_addr, dest_port = retrieve_arp_packet_info(packet)
+		src_addr, src_port, \
+			dest_addr, dest_port = retrieve_arp_packet_info(packet)
 	elif etype == IPv4_ID:	# IPv4 Packet
-		etype_transport, src_addr, src_port, dest_addr, dest_port = retrieve_ipv4_packet_info(packet)
+		etype_transport, src_addr, src_port, \
+			dest_addr, dest_port = retrieve_ipv4_packet_info(packet)
 	elif etype == IPv6_ID:	# IPv6 Packet
-		etype_transport, src_addr, src_port, dest_addr, dest_port = retrieve_ipv6_packet_info(packet)
+		etype_transport, src_addr, src_port, \
+			dest_addr, dest_port = retrieve_ipv6_packet_info(packet)
 	else:
-		print "------ ", etype, MAC_to_name(src_mac), MAC_to_name(dest_mac), "------ "
+		print "------ ", etype, 				\
+			MAC_to_name(src_mac), MAC_to_name(dest_mac), 	\
+			"------ "
 		return
 
-	g_print_data(etype, etype_transport, src_mac, src_addr, src_port, dest_mac, dest_addr, dest_port)
+	g_print_data(etype, etype_transport, \
+			src_mac, src_addr, src_port, \
+			dest_mac, dest_addr, dest_port)
 
 
 ###
@@ -874,7 +924,8 @@ def main():
 		net_iface_dev = argv[1]
 
 	if not path.isfile(get_sys_path(net_iface_dev)):
-		print "Network Interface \"" + net_iface_dev + "\" is not available!"
+		print "Network Interface \"" + net_iface_dev + \
+			"\" is not available!"
 		return False
 	else:
 		init_cache()
@@ -886,7 +937,8 @@ def main():
 		get_DHCP_server(net_iface_dev)
 
 		# global values
-		global g_local_MAC, g_print_mac, g_print_in_csv, g_print_human_readable
+		global g_local_MAC, g_print_mac, g_print_in_csv,
+			g_print_human_readable
 		g_local_MAC = local_MAC(get_sys_path(net_iface_dev))
 		g_print_mac = False
 		g_print_in_csv = False
