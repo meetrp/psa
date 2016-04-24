@@ -37,10 +37,10 @@ from struct import unpack, pack
 from sys import argv, exit
 from time import gmtime, strftime, time
 
-from fcntl import ioctl
+# FIXME: Remove the dependencies on Redis
 from redis import Redis
 
-
+# TODO: Move these to a constants file
 ###
 # Packet type
 ARP_ID = "0x806"		# ARP Packet
