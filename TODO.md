@@ -4,8 +4,7 @@ TODO
 ## py.sniffer/sniffer.py
 Line|Content
 ---|---
-**40** | # FIXME: Remove the dependencies on Redis
-**43** | # TODO: Move these to a constants file
+**45** | # TODO: Move these to a constants file
 
 ## setup.py
 Line|Content
