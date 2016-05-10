@@ -1,1 +1,18 @@
-*.pyc
+*.py[cod]
+*.swp
+
+#
+# test related
+.coverage
+htmlcov
+.tox
+
+#
+# ide related
+.idea
+
+#
+# packages
+*.egg
+*.egg-info
+
