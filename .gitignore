@@ -10,6 +10,8 @@ htmlcov
 #
 # ide related
 .idea
+.project
+.pydevproject
 
 #
 # packages
