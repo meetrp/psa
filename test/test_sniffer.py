@@ -18,6 +18,7 @@ def sniff(request):
 def test_output(request):
     return request.param
 
+
 class TestSniffer(object):
     @pytest.mark.parametrize("sniff,test_output",
                              [
