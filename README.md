@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/meetrp/py.sniffer.svg?branch=develop)](https://travis-ci.org/meetrp/py.sniffer)
+[![Build Status](https://travis-ci.org/meetrp/py.sniffer.svg?branch=develop)](https://travis-ci.org/meetrp/py.sniffer) [![Coverage Status](https://coveralls.io/repos/github/meetrp/py.sniffer/badge.svg?branch=develop)](https://coveralls.io/github/meetrp/py.sniffer?branch=develop)
 
 sniffer.py
 ==========
