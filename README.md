@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/meetrp/py.sniffer.svg?branch=develop)](https://travis-ci.org/meetrp/py.sniffer)
+
 sniffer.py
 ==========
 Network sniffer. The scope is to **Sniff every incoming as well as outgoing packet.** Then parse various packets like 'Ethernet', 'IP', 'TCP/UDP' &amp; 'DNS' to log the network activity.
