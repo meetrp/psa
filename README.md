@@ -1,4 +1,7 @@
-[![Build Status](https://travis-ci.org/meetrp/py.sniffer.svg?branch=develop)](https://travis-ci.org/meetrp/py.sniffer)   [![Coverage Status](https://coveralls.io/repos/github/meetrp/py.sniffer/badge.svg?branch=develop)](https://coveralls.io/github/meetrp/py.sniffer?branch=develop) [![HitCount](http://hits.dwyl.io/meetrp/py.sniffer.svg)](http://hits.dwyl.io/meetrp/py.sniffer)  [![PEP8](https://img.shields.io/badge/code%20style-pep8-orange.svg)](https://www.python.org/dev/peps/pep-0008/)
+[![Build Status](https://travis-ci.org/meetrp/psa.svg?branch=develop)](https://travis-ci.org/meetrp/psa)
+[![Coverage Status](https://coveralls.io/repos/github/meetrp/psa/badge.svg?branch=develop)](https://coveralls.io/github/meetrp/psa?branch=develop)
+[![HitCount](http://hits.dwyl.io/meetrp/psa.svg)](http://hits.dwyl.io/meetrp/psa)
+[![PEP8](https://img.shields.io/badge/code%20style-pep8-orange.svg)](https://www.python.org/dev/peps/pep-0008/)
 
 sniffer.py
 ==========
