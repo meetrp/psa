@@ -4,6 +4,10 @@ about: Suggest an user story; Accepted Feature Request get converted to User Sto
 
 ---
 
-**As a** < type of user >
-**I want** < some goal >
-**so that** < some reason >.
+As a < type of user >
+I want < some goal >
+so that < some reason >.
+
+**Acceptance Criteria**
+- < AC1 >
+- < AC2 >
