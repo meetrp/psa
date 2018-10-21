@@ -9,7 +9,7 @@ before_install:
 install:
   - "python setup.py install"
 script:
-  - "pycodestyle"
-  - "coverage run --source=sniffer setup.py test"
+  - "pycodestyle psa"
+  - "coverage run --source=psa setup.py test"
 after_success:
   coveralls

@@ -2,7 +2,13 @@
 This function will print all the details of all packets
 """
 
-from sniffer import sniffer
+from psa import listener
 
-s = sniffer.Sniffer()
-print s.get_dev()
+CONFIG = {
+        'iface': 'eth0'
+}
+
+
+s = listener.Listener(CONFIG["iface"])
+s.connect()
+s.listen()

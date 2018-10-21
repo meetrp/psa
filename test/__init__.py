@@ -1,3 +1,3 @@
 """
-test module for sniffer
+test module for listener
 """

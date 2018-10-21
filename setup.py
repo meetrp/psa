@@ -6,7 +6,7 @@ import sys
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
-import sniffer
+import psa
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -30,21 +30,25 @@ class Tox(TestCommand):
 
 
 setup(
-    name='sniffer',
-    version=sniffer.__version__,
-    description='Packet sniffer using raw sockets',
+    name='psa',
+    version=psa.__version__,
+    description='Packet listener, parser & analyzer using raw sockets',
     long_description=readme,
     author='Rp',
     author_email='rp@meetrp.com',
-    url='https://github.com/meetrp/py.sniffer',
+    url='https://github.com/meetrp/psa',
     license=license,
     packages=find_packages(exclude=('tests', 'docs')),
     include_packet_data=True,
     platforms='any',
-    tests_require=['tox'],
+    setup_requires=["pytest-runner"],
+    tests_require=['pytest'],
     cmdclass={'test': Tox},
-    test_suite='test.test_sniffer',
+    test_suite='pytest',
+    install_requires=[
+        'netifaces',
+    ],
     extras_require={
         'testing': ['pytest']
-    }
+    },
 )
