@@ -51,5 +51,5 @@ class Listener():
         :return:
         """
         while True:
-            buf = self.__soc.recvfrom(4096)
+            buf, _ = self.__soc.recvfrom(4096)
             print(time.time(), len(buf))
